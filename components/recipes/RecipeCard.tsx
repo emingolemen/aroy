@@ -10,9 +10,11 @@ interface RecipeCardProps {
     recipe_ingredients?: Array<{ id: string; name: string }>
   }
   priority?: boolean
+  basePath?: string
+  useId?: boolean
 }
 
-export function RecipeCard({ recipe, priority = false }: RecipeCardProps) {
+export function RecipeCard({ recipe, priority = false, basePath = '/recipes/', useId = false }: RecipeCardProps) {
   // Get main tags (from tag groups like Cuisine, Type) - exclude Ingredients
   const mainTags = recipe.tags?.filter(tag => 
     tag.tag_group?.name !== 'Ingredients' && 
@@ -22,10 +24,12 @@ export function RecipeCard({ recipe, priority = false }: RecipeCardProps) {
   // Get ingredient keywords (main ingredients)
   const ingredients = recipe.recipe_ingredients || []
 
+  const recipeHref = useId ? `${basePath}${recipe.id}` : `${basePath}${recipe.slug}`
+
   return (
     <div className="bg-white overflow-hidden flex flex-col gap-2.5">
       {recipe.image_url && (
-        <Link href={`/recipes/${recipe.slug}`} className="block">
+        <Link href={recipeHref} className="block">
           <div className="relative w-full aspect-square overflow-hidden rounded-lg">
             <Image
               src={recipe.image_url}
@@ -58,7 +62,7 @@ export function RecipeCard({ recipe, priority = false }: RecipeCardProps) {
         )}
         
         {/* Title */}
-        <Link href={`/recipes/${recipe.slug}`} className="group">
+        <Link href={recipeHref} className="group">
           <h3 className="text-2xl font-bold text-gray-900 group-hover:text-gray-700 transition-colors leading-[26px] w-full h-auto">
             {recipe.name}
           </h3>

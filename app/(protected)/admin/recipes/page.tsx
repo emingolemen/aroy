@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
-import { ClickableRecipeCard } from '@/components/recipes/ClickableRecipeCard'
+import { RecipeCard } from '@/components/recipes/RecipeCard'
 import { RecipeGrid } from '@/components/recipes/RecipeGrid'
 import { AdminRecipeFilters } from '@/components/admin/AdminRecipeFilters'
 import { TagGroup } from '@/types/database'
@@ -46,10 +46,7 @@ async function getRecipes(filters?: {
     return []
   }
 
-  let filteredRecipes = (data || []).map((recipe: any) => ({
-    ...recipe,
-    tags: recipe.recipe_tags?.map((rt: any) => rt.tag) || [],
-  }))
+  let filteredRecipes = data || []
 
   // Apply search filter: search by recipe title, tags, and ingredient tags
   if (filters?.search) {
@@ -195,13 +192,17 @@ export default async function AdminRecipesPage({ searchParams }: PageProps) {
         ) : (
           <RecipeGrid>
             {recipes.map((recipe: any, index: number) => (
-              <div key={recipe.id} className="relative">
-                <ClickableRecipeCard 
-                  recipe={recipe} 
-                  priority={index < 3}
-                  href={`/admin/recipes/${recipe.id}`}
-                />
-              </div>
+              <RecipeCard
+                key={recipe.id}
+                recipe={{
+                  ...recipe,
+                  tags: recipe.recipe_tags?.map((rt: any) => rt.tag) || [],
+                  recipe_ingredients: recipe.recipe_ingredients?.map((ri: any) => ri.tag) || [],
+                }}
+                priority={index < 3}
+                basePath="/admin/recipes/"
+                useId={true}
+              />
             ))}
           </RecipeGrid>
         )}
