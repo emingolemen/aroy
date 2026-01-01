@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     })
 
     const tagGroupMap = new Map<string, string>()
-    for (const record of tagGroupsRecords) {
+    for (const record of tagGroupsRecords as Record<string, string>[]) {
       const name = record.name?.trim()
       const displayOrder = parseInt(record.display_order || '0', 10)
 
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     })
 
     const tagMap = new Map<string, string>()
-    for (const record of tagsRecords) {
+    for (const record of tagsRecords as Record<string, string>[]) {
       const name = record.name?.trim()
       const tagGroupName = record.tag_group?.trim()
 
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
     })
 
     let successCount = 0
-    for (const record of recipesRecords) {
+    for (const record of recipesRecords as Record<string, string>[]) {
       const name = record.name?.trim()
       if (!name) continue
 

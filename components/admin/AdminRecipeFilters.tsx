@@ -26,7 +26,7 @@ const tagSchema = z.object({
 
 const tagGroupSchema = z.object({
   name: z.string().min(1, 'Name is required'),
-  display_order: z.number().min(0).default(0),
+  display_order: z.number().min(0),
 })
 
 type TagFormData = z.infer<typeof tagSchema>

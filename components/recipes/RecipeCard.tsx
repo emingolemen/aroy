@@ -7,6 +7,7 @@ interface RecipeCardProps {
     tags?: Array<{ id: string; name: string; tag_group?: { name: string } }>
     recipe_ingredients?: Array<{ id: string; name: string }>
   }
+  priority?: boolean
 }
 
 export function RecipeCard({ recipe, priority = false }: RecipeCardProps) {
