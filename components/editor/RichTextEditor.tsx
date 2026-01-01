@@ -41,6 +41,7 @@ export function RichTextEditor({
     ],
     content: content || '{"type":"doc","content":[]}',
     editable,
+    immediatelyRender: false,
     onUpdate: ({ editor }) => {
       onChange(JSON.stringify(editor.getJSON()))
     },

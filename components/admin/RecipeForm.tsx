@@ -278,7 +278,10 @@ export function RecipeForm({ recipe }: RecipeFormProps) {
       <div className="space-y-2">
         <Label>Tags</Label>
         <TagSelector
-          tagGroups={tagGroups}
+          tagGroups={tagGroups.filter(g => 
+            g.name.toLowerCase() === 'cuisine' || 
+            g.name.toLowerCase() === 'type'
+          )}
           selectedTagIds={watch('tagIds')}
           onChange={(tagIds) => setValue('tagIds', tagIds)}
         />

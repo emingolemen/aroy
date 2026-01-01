@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
-import { RecipeCard } from '@/components/recipes/RecipeCard'
+import { ClickableRecipeCard } from '@/components/recipes/ClickableRecipeCard'
 import { RecipeGrid } from '@/components/recipes/RecipeGrid'
 import { AdminRecipeFilters } from '@/components/admin/AdminRecipeFilters'
 import { TagGroup } from '@/types/database'
@@ -196,9 +196,11 @@ export default async function AdminRecipesPage({ searchParams }: PageProps) {
           <RecipeGrid>
             {recipes.map((recipe: any, index: number) => (
               <div key={recipe.id} className="relative">
-                <Link href={`/admin/recipes/${recipe.id}`}>
-                  <RecipeCard recipe={recipe} priority={index < 3} />
-                </Link>
+                <ClickableRecipeCard 
+                  recipe={recipe} 
+                  priority={index < 3}
+                  href={`/admin/recipes/${recipe.id}`}
+                />
               </div>
             ))}
           </RecipeGrid>

@@ -1,3 +1,5 @@
+'use client'
+
 import Link from 'next/link'
 import Image from 'next/image'
 import { Recipe } from '@/types/database'
@@ -47,6 +49,7 @@ export function RecipeCard({ recipe, priority = false }: RecipeCardProps) {
                 href={`/?tags=${tag.id}`}
                 className="text-xs font-bold uppercase tracking-wide hover:underline transition-colors"
                 style={{ color: 'rgba(230, 115, 0, 1)' }}
+                onClick={(e) => e.stopPropagation()}
               >
                 {tag.name}
               </Link>
@@ -64,11 +67,12 @@ export function RecipeCard({ recipe, priority = false }: RecipeCardProps) {
         {/* Keywords (main ingredients) */}
         {ingredients.length > 0 && (
           <div className="flex flex-wrap gap-2 leading-4 h-auto w-full">
-            {ingredients.slice(0, 4).map(ingredient => (
+            {ingredients.slice(0, 4).map((ingredient, index) => (
               <Link
-                key={ingredient.id}
+                key={ingredient.id || `ingredient-${index}`}
                 href={`/?tags=${ingredient.id}`}
                 className="text-sm text-gray-500 font-medium hover:text-gray-700 hover:underline transition-colors"
+                onClick={(e) => e.stopPropagation()}
               >
                 {ingredient.name}
               </Link>
