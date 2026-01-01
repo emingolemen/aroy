@@ -19,12 +19,19 @@ export interface Tag {
   tag_group?: TagGroup
 }
 
+export interface IngredientRow {
+  quantity: string
+  tagId: string | null
+  notes: string
+}
+
 export interface Recipe {
   id: string
   slug: string
   name: string
   image_url: string | null
   ingredients_text: string // JSON string of Tiptap content
+  ingredients_structured?: IngredientRow[] // Structured ingredient data
   instructions: string // JSON string of Tiptap content
   inspiration: string // JSON string of Tiptap content
   created_at: string

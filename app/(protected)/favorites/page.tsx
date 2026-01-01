@@ -45,6 +45,7 @@ async function getFavorites(filters?: {
         slug,
         name,
         image_url,
+        ingredients_structured,
         recipe_tags (
           tag:tags (
             id,
@@ -81,6 +82,58 @@ async function getFavorites(filters?: {
     recipe_ingredients: fav.recipe.recipe_ingredients?.map((ri: any) => ri.tag) || [],
   }))
 
+  // Extract tagIds from structured ingredients and fetch tags
+  const structuredTagIds = new Set<string>()
+  recipes.forEach((recipe: any) => {
+    if (recipe.ingredients_structured && Array.isArray(recipe.ingredients_structured)) {
+      recipe.ingredients_structured.forEach((ing: any) => {
+        if (ing.tagId) {
+          structuredTagIds.add(ing.tagId)
+        }
+      })
+    }
+  })
+
+  // Fetch tags for structured ingredients
+  const tagMap = new Map<string, any>()
+  if (structuredTagIds.size > 0) {
+    const { data: tagsData } = await supabase
+      .from('tags')
+      .select(`
+        id,
+        name,
+        tag_group:tag_groups (
+          id,
+          name
+        )
+      `)
+      .in('id', Array.from(structuredTagIds))
+
+    if (tagsData) {
+      tagsData.forEach((tag: any) => {
+        tagMap.set(tag.id, tag)
+      })
+    }
+  }
+
+  // Map structured ingredient tags to each recipe
+  recipes = recipes.map((recipe: any) => {
+    const structuredIngredientTags: any[] = []
+    if (recipe.ingredients_structured && Array.isArray(recipe.ingredients_structured)) {
+      const seenTagIds = new Set<string>()
+      recipe.ingredients_structured.forEach((ing: any) => {
+        if (ing.tagId && tagMap.has(ing.tagId) && !seenTagIds.has(ing.tagId)) {
+          structuredIngredientTags.push(tagMap.get(ing.tagId)!)
+          seenTagIds.add(ing.tagId)
+        }
+      })
+    }
+    return {
+      ...recipe,
+      structured_ingredient_tags: structuredIngredientTags
+    }
+  })
+
   // Apply search filter: search by recipe title, tags, and ingredient tags
   if (filters?.search) {
     const searchLower = filters.search.toLowerCase()
@@ -93,8 +146,8 @@ async function getFavorites(filters?: {
         tag.name.toLowerCase().includes(searchLower)
       ) || false
       
-      // Check ingredient tags
-      const matchesIngredientTags = recipe.recipe_ingredients?.some((tag: any) => 
+      // Check ingredient tags (from structured ingredients)
+      const matchesIngredientTags = recipe.structured_ingredient_tags?.some((tag: any) => 
         tag.name.toLowerCase().includes(searchLower)
       ) || false
       
@@ -112,14 +165,16 @@ async function getFavorites(filters?: {
       })
     })
 
-    // Get all unique ingredient tag IDs from the database
-    const { data: ingredientTagsData } = await supabase
-      .from('recipe_ingredients')
-      .select('tag_id')
-    
-    const ingredientTagIdSet = new Set<string>()
-    ingredientTagsData?.forEach((item: any) => {
-      ingredientTagIdSet.add(item.tag_id)
+    // Get all unique ingredient tag IDs from structured ingredients
+    const structuredIngredientTagIdSet = new Set<string>()
+    recipes.forEach((recipe: any) => {
+      if (recipe.ingredients_structured && Array.isArray(recipe.ingredients_structured)) {
+        recipe.ingredients_structured.forEach((ing: any) => {
+          if (ing.tagId) {
+            structuredIngredientTagIdSet.add(ing.tagId)
+          }
+        })
+      }
     })
 
     // Separate tags into recipe tags and ingredient tags
@@ -130,14 +185,14 @@ async function getFavorites(filters?: {
       const groupName = tagToGroupMap.get(tagId) || ''
       // A tag is an ingredient tag if:
       // 1. Its tag group name includes "ingredient" (case-insensitive), OR
-      // 2. The tag is actually used in recipe_ingredients table
+      // 2. The tag is actually used in structured ingredients
       const isIngredientGroup = groupName.includes('ingredient') || 
                                 groupName.includes('protein') ||
                                 groupName.includes('veggie') ||
                                 groupName.includes('carb') ||
                                 groupName.includes('dairy')
       
-      if (isIngredientGroup || ingredientTagIdSet.has(tagId)) {
+      if (isIngredientGroup || structuredIngredientTagIdSet.has(tagId)) {
         ingredientTagIds.push(tagId)
       } else {
         recipeTagIds.push(tagId)
@@ -146,7 +201,7 @@ async function getFavorites(filters?: {
 
     recipes = recipes.filter((recipe: any) => {
       const recipeTagIdsInRecipe = recipe.tags?.map((tag: any) => tag.id) || []
-      const ingredientTagIdsInRecipe = recipe.recipe_ingredients?.map((tag: any) => tag.id) || []
+      const ingredientTagIdsInRecipe = recipe.structured_ingredient_tags?.map((tag: any) => tag.id) || []
 
       // OR logic within recipe tags: recipe must have at least one of the selected recipe tags
       const matchesRecipeTags = recipeTagIds.length === 0 || 
@@ -200,7 +255,10 @@ export default async function FavoritesPage({ searchParams }: PageProps) {
             {recipes.map((recipe: any, index: number) => (
               <RecipeCard
                 key={recipe.id}
-                recipe={recipe}
+                recipe={{
+                  ...recipe,
+                  recipe_ingredients: recipe.structured_ingredient_tags || [],
+                }}
                 priority={index < 3}
               />
             ))}

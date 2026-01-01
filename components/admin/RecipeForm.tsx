@@ -11,7 +11,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { RichTextEditor } from '@/components/editor/RichTextEditor'
 import { TagSelector } from '@/components/admin/TagSelector'
-import { Tag } from '@/types/database'
+import { IngredientRowsForm } from '@/components/admin/IngredientRowsForm'
+import { Tag, IngredientRow } from '@/types/database'
 import { Upload } from 'lucide-react'
 
 const recipeSchema = z.object({
@@ -19,6 +20,11 @@ const recipeSchema = z.object({
   slug: z.string().min(1, 'Slug is required'),
   image_url: z.string().optional(),
   ingredients_text: z.string(),
+  ingredients_structured: z.array(z.object({
+    quantity: z.string(),
+    tagId: z.string().nullable(),
+    notes: z.string(),
+  })),
   instructions: z.string(),
   inspiration: z.string(),
   tagIds: z.array(z.string()),
@@ -34,6 +40,7 @@ interface RecipeFormProps {
     slug: string
     image_url: string | null
     ingredients_text: string
+    ingredients_structured?: IngredientRow[]
     instructions: string
     inspiration: string
     tagIds?: string[]
@@ -60,6 +67,7 @@ export function RecipeForm({ recipe }: RecipeFormProps) {
       slug: recipe?.slug || '',
       image_url: recipe?.image_url || '',
       ingredients_text: recipe?.ingredients_text || '{"type":"doc","content":[]}',
+      ingredients_structured: recipe?.ingredients_structured || [],
       instructions: recipe?.instructions || '{"type":"doc","content":[]}',
       inspiration: recipe?.inspiration || '{"type":"doc","content":[]}',
       tagIds: recipe?.tagIds || [],
@@ -136,6 +144,7 @@ export function RecipeForm({ recipe }: RecipeFormProps) {
             slug: data.slug,
             image_url: data.image_url || null,
             ingredients_text: data.ingredients_text,
+            ingredients_structured: data.ingredients_structured,
             instructions: data.instructions,
             inspiration: data.inspiration,
             updated_at: new Date().toISOString(),
@@ -174,6 +183,7 @@ export function RecipeForm({ recipe }: RecipeFormProps) {
             slug: data.slug,
             image_url: data.image_url || null,
             ingredients_text: data.ingredients_text,
+            ingredients_structured: data.ingredients_structured,
             instructions: data.instructions,
             inspiration: data.inspiration,
             created_by: user.id,
@@ -303,18 +313,24 @@ export function RecipeForm({ recipe }: RecipeFormProps) {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="ingredients_text">Ingredients (Rich Text)</Label>
-        <RichTextEditor
-          content={watch('ingredients_text')}
-          onChange={(content) => setValue('ingredients_text', content)}
-          placeholder="List all ingredients..."
+        <Label htmlFor="ingredients_structured">Ingredients</Label>
+        <IngredientRowsForm
+          value={watch('ingredients_structured')}
+          onChange={(value) => setValue('ingredients_structured', value)}
+          tagGroups={tagGroups.filter(g => 
+            g.name.toLowerCase().includes('ingredient') || 
+            g.name.toLowerCase().includes('protein') ||
+            g.name.toLowerCase().includes('veggie') ||
+            g.name.toLowerCase().includes('carb') ||
+            g.name.toLowerCase().includes('dairy')
+          )}
         />
-        {errors.ingredients_text && (
-          <p className="text-sm text-red-600">{errors.ingredients_text.message}</p>
+        {errors.ingredients_structured && (
+          <p className="text-sm text-red-600">{errors.ingredients_structured.message}</p>
         )}
         <Input
           type="hidden"
-          {...register('ingredients_text')}
+          {...register('ingredients_structured')}
         />
       </div>
 

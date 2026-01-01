@@ -48,6 +48,58 @@ async function getRecipes(filters?: {
 
   let filteredRecipes = data || []
 
+  // Extract tagIds from structured ingredients and fetch tags
+  const structuredTagIds = new Set<string>()
+  filteredRecipes.forEach((recipe: any) => {
+    if (recipe.ingredients_structured && Array.isArray(recipe.ingredients_structured)) {
+      recipe.ingredients_structured.forEach((ing: any) => {
+        if (ing.tagId) {
+          structuredTagIds.add(ing.tagId)
+        }
+      })
+    }
+  })
+
+  // Fetch tags for structured ingredients
+  const tagMap = new Map<string, any>()
+  if (structuredTagIds.size > 0) {
+    const { data: tagsData } = await supabase
+      .from('tags')
+      .select(`
+        id,
+        name,
+        tag_group:tag_groups (
+          id,
+          name
+        )
+      `)
+      .in('id', Array.from(structuredTagIds))
+
+    if (tagsData) {
+      tagsData.forEach((tag: any) => {
+        tagMap.set(tag.id, tag)
+      })
+    }
+  }
+
+  // Map structured ingredient tags to each recipe
+  filteredRecipes = filteredRecipes.map((recipe: any) => {
+    const structuredIngredientTags: any[] = []
+    if (recipe.ingredients_structured && Array.isArray(recipe.ingredients_structured)) {
+      const seenTagIds = new Set<string>()
+      recipe.ingredients_structured.forEach((ing: any) => {
+        if (ing.tagId && tagMap.has(ing.tagId) && !seenTagIds.has(ing.tagId)) {
+          structuredIngredientTags.push(tagMap.get(ing.tagId)!)
+          seenTagIds.add(ing.tagId)
+        }
+      })
+    }
+    return {
+      ...recipe,
+      structured_ingredient_tags: structuredIngredientTags
+    }
+  })
+
   // Apply search filter: search by recipe title, tags, and ingredient tags
   if (filters?.search) {
     const searchLower = filters.search.toLowerCase()
@@ -60,9 +112,9 @@ async function getRecipes(filters?: {
         rt.tag.name.toLowerCase().includes(searchLower)
       ) || false
       
-      // Check ingredient tags
-      const matchesIngredientTags = recipe.recipe_ingredients?.some((ri: any) => 
-        ri.tag.name.toLowerCase().includes(searchLower)
+      // Check ingredient tags (from structured ingredients)
+      const matchesIngredientTags = recipe.structured_ingredient_tags?.some((tag: any) => 
+        tag.name.toLowerCase().includes(searchLower)
       ) || false
       
       return matchesTitle || matchesTags || matchesIngredientTags
@@ -79,14 +131,16 @@ async function getRecipes(filters?: {
       })
     })
 
-    // Get all unique ingredient tag IDs from the database
-    const { data: ingredientTagsData } = await supabase
-      .from('recipe_ingredients')
-      .select('tag_id')
-    
-    const ingredientTagIdSet = new Set<string>()
-    ingredientTagsData?.forEach((item: any) => {
-      ingredientTagIdSet.add(item.tag_id)
+    // Get all unique ingredient tag IDs from structured ingredients
+    const structuredIngredientTagIdSet = new Set<string>()
+    filteredRecipes.forEach((recipe: any) => {
+      if (recipe.ingredients_structured && Array.isArray(recipe.ingredients_structured)) {
+        recipe.ingredients_structured.forEach((ing: any) => {
+          if (ing.tagId) {
+            structuredIngredientTagIdSet.add(ing.tagId)
+          }
+        })
+      }
     })
 
     // Separate tags into recipe tags and ingredient tags
@@ -101,16 +155,16 @@ async function getRecipes(filters?: {
                                 groupName.includes('carb') ||
                                 groupName.includes('dairy')
       
-      if (isIngredientGroup || ingredientTagIdSet.has(tagId)) {
+      if (isIngredientGroup || structuredIngredientTagIdSet.has(tagId)) {
         ingredientTagIds.push(tagId)
       } else {
         recipeTagIds.push(tagId)
       }
     })
 
-    return (data || []).filter((recipe: any) => {
+    return filteredRecipes.filter((recipe: any) => {
       const recipeTagIdsInRecipe = recipe.recipe_tags?.map((rt: any) => rt.tag.id) || []
-      const ingredientTagIdsInRecipe = recipe.recipe_ingredients?.map((ri: any) => ri.tag.id) || []
+      const ingredientTagIdsInRecipe = recipe.structured_ingredient_tags?.map((tag: any) => tag.id) || []
 
       const matchesRecipeTags = recipeTagIds.length === 0 || 
         recipeTagIds.some(tagId => recipeTagIdsInRecipe.includes(tagId))
@@ -197,7 +251,7 @@ export default async function AdminRecipesPage({ searchParams }: PageProps) {
                 recipe={{
                   ...recipe,
                   tags: recipe.recipe_tags?.map((rt: any) => rt.tag) || [],
-                  recipe_ingredients: recipe.recipe_ingredients?.map((ri: any) => ri.tag) || [],
+                  recipe_ingredients: recipe.structured_ingredient_tags || [],
                 }}
                 priority={index < 3}
                 basePath="/admin/recipes/"

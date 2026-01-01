@@ -36,6 +36,7 @@ async function getRecipe(id: string) {
     ...data,
     tagIds: data.recipe_tags?.map((rt: any) => rt.tag.id) || [],
     ingredientTagIds: data.recipe_ingredients?.map((ri: any) => ri.tag.id) || [],
+    ingredients_structured: data.ingredients_structured || [],
   }
 }
 
