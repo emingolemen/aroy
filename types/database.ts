@@ -7,6 +7,7 @@ export interface TagGroup {
   display_order: number
   created_at: string
   updated_at: string
+  tags?: Tag[]
 }
 
 export interface Tag {
