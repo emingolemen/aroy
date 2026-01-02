@@ -55,16 +55,6 @@ async function getFavorites(filters?: {
               name
             )
           )
-        ),
-        recipe_ingredients (
-          tag:tags (
-            id,
-            name,
-            tag_group:tag_groups (
-              id,
-              name
-            )
-          )
         )
       )
     `)
@@ -79,7 +69,6 @@ async function getFavorites(filters?: {
   let recipes = (data || []).map((fav: any) => ({
     ...fav.recipe,
     tags: fav.recipe.recipe_tags?.map((rt: any) => rt.tag) || [],
-    recipe_ingredients: fav.recipe.recipe_ingredients?.map((ri: any) => ri.tag) || [],
   }))
 
   // Extract tagIds from structured ingredients and fetch tags

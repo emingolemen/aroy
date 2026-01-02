@@ -17,12 +17,6 @@ async function getRecipe(id: string) {
           name,
           tag_group_id
         )
-      ),
-      recipe_ingredients (
-        tag:tags (
-          id,
-          name
-        )
       )
     `)
     .eq('id', id)
@@ -35,7 +29,6 @@ async function getRecipe(id: string) {
   return {
     ...data,
     tagIds: data.recipe_tags?.map((rt: any) => rt.tag.id) || [],
-    ingredientTagIds: data.recipe_ingredients?.map((ri: any) => ri.tag.id) || [],
     ingredients_structured: data.ingredients_structured || [],
   }
 }
@@ -51,7 +44,7 @@ export default async function EditRecipePage({ params }: { params: Promise<{ id:
   }
 
   return (
-    <div>
+    <div className="my-8 mx-4">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold">Edit Recipe</h1>
         <DeleteRecipeButton recipeId={recipe.id} />

@@ -25,16 +25,6 @@ async function getRecipes(filters?: {
             name
           )
         )
-      ),
-      recipe_ingredients (
-        tag:tags (
-          id,
-          name,
-          tag_group:tag_groups (
-            id,
-            name
-          )
-        )
       )
     `)
     .order('created_at', { ascending: false })

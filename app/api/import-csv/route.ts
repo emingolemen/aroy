@@ -117,6 +117,13 @@ export async function POST(request: NextRequest) {
       const instructions = convertToTiptapJSON(record.instructions || '')
       const inspiration = convertToTiptapJSON(record.inspiration || '')
 
+      // Convert ingredient tag IDs to structured ingredients format
+      const ingredientsStructured = ingredientTagIds.map(tagId => ({
+        quantity: '',
+        tagId: tagId,
+        notes: '',
+      }))
+
       const { data: recipe, error } = await supabase
         .from('recipes')
         .insert({
@@ -124,6 +131,7 @@ export async function POST(request: NextRequest) {
           name,
           image_url: record.image_url?.trim() || null,
           ingredients_text: ingredientsText,
+          ingredients_structured: ingredientsStructured,
           instructions,
           inspiration,
         })
@@ -135,12 +143,6 @@ export async function POST(request: NextRequest) {
       if (tagIds.length > 0) {
         await supabase.from('recipe_tags').insert(
           tagIds.map(tagId => ({ recipe_id: recipe.id, tag_id: tagId }))
-        )
-      }
-
-      if (ingredientTagIds.length > 0) {
-        await supabase.from('recipe_ingredients').insert(
-          ingredientTagIds.map(tagId => ({ recipe_id: recipe.id, tag_id: tagId }))
         )
       }
 

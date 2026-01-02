@@ -28,7 +28,6 @@ const recipeSchema = z.object({
   instructions: z.string(),
   inspiration: z.string(),
   tagIds: z.array(z.string()),
-  ingredientTagIds: z.array(z.string()),
 })
 
 type RecipeFormData = z.infer<typeof recipeSchema>
@@ -44,7 +43,6 @@ interface RecipeFormProps {
     instructions: string
     inspiration: string
     tagIds?: string[]
-    ingredientTagIds?: string[]
   }
 }
 
@@ -71,7 +69,6 @@ export function RecipeForm({ recipe }: RecipeFormProps) {
       instructions: recipe?.instructions || '{"type":"doc","content":[]}',
       inspiration: recipe?.inspiration || '{"type":"doc","content":[]}',
       tagIds: recipe?.tagIds || [],
-      ingredientTagIds: recipe?.ingredientTagIds || [],
     },
   })
 
@@ -164,16 +161,6 @@ export function RecipeForm({ recipe }: RecipeFormProps) {
           )
         }
 
-        // Update ingredients
-        await supabase.from('recipe_ingredients').delete().eq('recipe_id', recipe.id)
-        if (data.ingredientTagIds.length > 0) {
-          await supabase.from('recipe_ingredients').insert(
-            data.ingredientTagIds.map(tagId => ({
-              recipe_id: recipe.id,
-              tag_id: tagId,
-            }))
-          )
-        }
       } else {
         // Create new recipe
         const { data: newRecipe, error: recipeError } = await supabase
@@ -203,15 +190,6 @@ export function RecipeForm({ recipe }: RecipeFormProps) {
           )
         }
 
-        // Add ingredients
-        if (data.ingredientTagIds.length > 0) {
-          await supabase.from('recipe_ingredients').insert(
-            data.ingredientTagIds.map(tagId => ({
-              recipe_id: newRecipe.id,
-              tag_id: tagId,
-            }))
-          )
-        }
       }
 
       router.push('/admin/recipes')
@@ -294,21 +272,6 @@ export function RecipeForm({ recipe }: RecipeFormProps) {
           )}
           selectedTagIds={watch('tagIds')}
           onChange={(tagIds) => setValue('tagIds', tagIds)}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label>Main Ingredients (from ingredient tags)</Label>
-        <TagSelector
-          tagGroups={tagGroups.filter(g => 
-            g.name.toLowerCase().includes('ingredient') || 
-            g.name.toLowerCase().includes('protein') ||
-            g.name.toLowerCase().includes('veggie') ||
-            g.name.toLowerCase().includes('carb') ||
-            g.name.toLowerCase().includes('dairy')
-          )}
-          selectedTagIds={watch('ingredientTagIds')}
-          onChange={(tagIds) => setValue('ingredientTagIds', tagIds)}
         />
       </div>
 
