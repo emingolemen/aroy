@@ -39,7 +39,7 @@ interface RecipeWithIngredients {
     tag: {
       id: string
       name: string
-    }
+    }[]
   }>
 }
 
@@ -90,7 +90,7 @@ async function main() {
     const errors: Array<{ recipe: string; error: string }> = []
 
     // Process each recipe
-    for (const recipe of recipes as RecipeWithIngredients[]) {
+    for (const recipe of recipes as unknown as RecipeWithIngredients[]) {
       const ingredientTags = recipe.recipe_ingredients || []
       
       // Check if ingredients_structured is missing or empty
@@ -113,11 +113,14 @@ async function main() {
       }
 
       // Create structured ingredient rows from ingredient tags
-      const structuredIngredients: IngredientRow[] = ingredientTags.map((ri) => ({
-        quantity: '',
-        tagId: ri.tag.id,
-        notes: '',
-      }))
+      const structuredIngredients: IngredientRow[] = ingredientTags.flatMap((ri) => {
+        const tags = Array.isArray(ri.tag) ? ri.tag : [ri.tag]
+        return tags.map((tag) => ({
+          quantity: '',
+          tagId: tag.id,
+          notes: '',
+        }))
+      })
 
       // Update the recipe
       const { error: updateError } = await supabase
@@ -140,7 +143,10 @@ async function main() {
       
       // Show sample of created ingredients
       if (updatedCount <= 3) {
-        const tagNames = ingredientTags.map(ri => ri.tag.name).join(', ')
+        const tagNames = ingredientTags.flatMap(ri => {
+          const tags = Array.isArray(ri.tag) ? ri.tag : [ri.tag]
+          return tags.map(tag => tag.name)
+        }).join(', ')
         console.log(`   └─ Tags: ${tagNames}`)
       }
     }
